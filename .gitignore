@@ -1,0 +1,7 @@
+__pycache__/
+*.png
+.DS_Store
+# Keep the fonts if they are small and necessary for the script
+!fonts/
+# Maybe keep one sample PNG
+!test_calendar_v3.png
