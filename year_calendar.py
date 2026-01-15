@@ -1,5 +1,6 @@
 import os
 import sys
+import subprocess
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
 
@@ -103,6 +104,17 @@ def generate_wallpaper():
     os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
     img.save(OUTPUT_PATH, "PNG")
     print(f"Calendar Generated: {OUTPUT_PATH}")
+    
+    # --- TRIGGER WALLPAPER UPDATE ---
+    applescript_path = os.path.join(os.path.dirname(__file__), "set_wallpaper.scpt")
+    if os.path.exists(applescript_path):
+        try:
+            subprocess.run(["osascript", applescript_path], check=True)
+            print("Wallpaper updated successfully.")
+        except subprocess.CalledProcessError as e:
+            print(f"Error updating wallpaper: {e}")
+    else:
+        print(f"Warning: AppleScript not found at {applescript_path}")
 
 if __name__ == "__main__":
     generate_wallpaper()

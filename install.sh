@@ -19,19 +19,28 @@ python3 "$PY_SCRIPT"
 echo "🖥️ Setting desktop picture..."
 osascript "$APPLE_SCRIPT"
 
-# 4. Setup Cron Job (6 AM Daily)
-# We use absolute paths for cron reliability
+# 4. Setup launchd (6 AM Daily)
+# launchd is more reliable on macOS than cron
+echo "🗓️ Setting up launchd service..."
+
+LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
+PLIST_NAME="com.user.calendar.plist"
+PLIST_PATH="$LAUNCH_AGENTS_DIR/$PLIST_NAME"
 PYTHON_PATH=$(which python3)
-CRON_CMD="0 6 * * * $PYTHON_PATH $PY_SCRIPT && /usr/bin/osascript $APPLE_SCRIPT"
 
-# Check if cron already exists
-(crontab -l 2>/dev/null | grep -F "$PY_SCRIPT") > /dev/null
-if [ $? -eq 0 ]; then
-    echo "✅ Cron job already exists."
-else
-    (crontab -l 2>/dev/null; echo "$CRON_CMD") | crontab -
-    echo "📅 Cron job scheduled for 6:00 AM daily."
-fi
+# 4.1 Remove existing cron job if present
+(crontab -l 2>/dev/null | grep -v "$PY_SCRIPT") | crontab - 2>/dev/null
+echo "🗑️ Cleaned up any existing cron jobs."
 
+# 4.2 Create plist from template
+sed "s|PYTHON_PATH|$PYTHON_PATH|g; s|PY_SCRIPT|$PY_SCRIPT|g" "$SCRIPT_DIR/com.user.calendar.plist.template" > "$PLIST_PATH"
+
+# 4.3 Load the service
+# Modern launchctl commands
+launchctl bootout gui/$(id -u)/com.user.calendar 2>/dev/null
+launchctl bootstrap gui/$(id -u) "$PLIST_PATH"
+
+echo "✅ launchd service loaded and scheduled for 6:00 AM daily (and on login)."
 echo "✨ Installation Complete! Your wallpaper will update automatically every day at 6 AM."
 echo "Check ~/Pictures/year_calendar.png for the current file."
+echo "You can manually trigger an update with: launchctl kickstart -p gui/$(id -u)/com.user.calendar"
